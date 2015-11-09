@@ -88,6 +88,7 @@ function start($telegram,$update)
 				if ($csv[$i][32] != NULL)	$homepage .="\nGoogle+: ".$csv[$i][32];
 				if ($csv[$i][33] != NULL)	$homepage .="\nYouTube: ".$csv[$i][33];
 				if ($csv[$i][12] != NULL) $homepage .="\nWebsite: ".$csv[$i][12];
+				if ($csv[$i][12] != NULL) $homepage .="\nEntitles: ".$csv[$i][35];
 				$csv[$i][1]=str_replace(",",".",$csv[$i][1]);
 				$csv[$i][2]=str_replace(",",".",$csv[$i][2]);
 
@@ -199,6 +200,7 @@ function location_manager($telegram,$user_id,$chat_id,$location)
 				if ($csv[$i][32] != NULL)	$homepage .="\nGoogle+: ".$csv[$i][32];
 				if ($csv[$i][33] != NULL)	$homepage .="\nYouTube: ".$csv[$i][33];
 				if ($csv[$i][12] != NULL) $homepage .="\nWebsite: ".$csv[$i][12];
+				if ($csv[$i][12] != NULL) $homepage .="\nEntitles: ".$csv[$i][35];
 $csv[$i][1]=str_replace(",",".",$csv[$i][1]);
 $csv[$i][2]=str_replace(",",".",$csv[$i][2]);
 
