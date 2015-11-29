@@ -40,13 +40,29 @@ function start($telegram,$update)
 	date_default_timezone_set('Europe/Rome');
 	$today = date("Y-m-d H:i:s");
 
-	if ($text == "/start") {
+	if ($text == "/start" || $text == "Informazioni") {
 		$reply = "Benvenuto. Per ricercare un'IPA, clicca sulla graffetta (📎) e poi 'posizione' oppure digita il nome del Comune. Verrà interrogato il DataBase IPA realizzato da Riccardo Maria Grosso utilizzabile con licenza CC-BY e verranno elencati fino a max 20 IPA. In qualsiasi momento scrivendo /start ti ripeterò questo messaggio di benvenuto.\nQuesto bot, non ufficiale, è stato realizzato da @piersoft e il codice sorgente per libero riuso. La propria posizione viene ricercata grazie al geocoder di openStreetMap con Lic. odbl.";
+		$content = array('chat_id' => $chat_id, 'text' => $reply,'disable_web_page_preview'=>true);
+		$telegram->sendMessage($content);
+		$log=$today. ";new chat started;" .$chat_id. "\n";
+		$this->create_keyboard_temp($telegram,$chat_id);
+
+
+	}elseif ($text == "Città") {
+		$reply = "Digita direttamente il nome del Comune.";
 		$content = array('chat_id' => $chat_id, 'text' => $reply,'disable_web_page_preview'=>true);
 		$telegram->sendMessage($content);
 		$log=$today. ";new chat started;" .$chat_id. "\n";
 
 		}
+		elseif ($text == "Entitity") {
+			$reply = "Se già conosci l'Entity da cercare, scrivi ?nome entity, ad esempio: ?B22_MERCATO COMUNALE";
+			$content = array('chat_id' => $chat_id, 'text' => $reply,'disable_web_page_preview'=>true);
+			$telegram->sendMessage($content);
+			$log=$today. ";new chat started;" .$chat_id. "\n";
+
+			}
+
 
 		//gestione segnalazioni georiferite
 		elseif($location!=null)
@@ -58,21 +74,39 @@ function start($telegram,$update)
 		}
 //elseif($text !=null)
 
-		else{
+		elseif(strpos($text,'/') === false){
+			$url="";
+			$location="";
+			$count = 0;
+			$top=20;
+			$iter=0;
+			if (strpos($text,'?') !== false) {
+				$text=str_replace("?","",$text);
+				$location="Sto cercando le ontologie censite dall'IPA.gov.it con entity: ".$text." per max 20 IPA";
+			//	$url="https://spreadsheets.google.com/tq?tqx=out:csv&tq=SELECT%20%2A%20WHERE%20AJ%20LIKE%20%27%25".ucfirst($text)."%25%27&key=1ggPvvCCGpF3WlsUEjYX6jaIBVmmu2HdWTvJeZp5X22g";
+				$text=str_replace(" ","%20",$text);
+				$url="https://spreadsheets.google.com/tq?tqx=out:csv&tq=SELECT%20%2A%20WHERE%20AJ%20LIKE%20%27%25".ucfirst($text)."%25%27&key=1ggPvvCCGpF3WlsUEjYX6jaIBVmmu2HdWTvJeZp5X22g";
+				$iter=1;
+		//	if ($count > 19) $top=$count;
+		}else{
 			$location="Sto cercando le ontologie censite dall'IPA.gov.it del Comune di: ".$text;
+			$url="https://spreadsheets.google.com/tq?tqx=out:csv&tq=SELECT%20%2A%20WHERE%20G%20LIKE%20%27%25".ucfirst($text)."%25%27&key=1ggPvvCCGpF3WlsUEjYX6jaIBVmmu2HdWTvJeZp5X22g";
+			$top=$count;
+			$iter=0;
+		}
 			$content = array('chat_id' => $chat_id, 'text' => $location,'disable_web_page_preview'=>true);
 			$telegram->sendMessage($content);
-			sleep (1);
-			$url="https://spreadsheets.google.com/tq?tqx=out:csv&tq=SELECT%20%2A%20WHERE%20G%20LIKE%20%27%25".ucfirst($text)."%25%27&key=1ggPvvCCGpF3WlsUEjYX6jaIBVmmu2HdWTvJeZp5X22g";
+			sleep (2);
+		//	$url="https://spreadsheets.google.com/tq?tqx=out:csv&tq=SELECT%20%2A%20WHERE%20G%20LIKE%20%27%25".ucfirst($text)."%25%27&key=1ggPvvCCGpF3WlsUEjYX6jaIBVmmu2HdWTvJeZp5X22g";
 			$csv = array_map('str_getcsv', file($url));
 			//	$i=1;
 
-			$count = 0;
 			foreach($csv as $data=>$csv1){
 				 $count = $count+1;
 			}
-			//var_dump($csv);
 
+			//var_dump($csv);
+		//	if ($iter==1) $count=21;
 			for ($i=1;$i<$count;$i++){
 				$homepage .="\n";
 				$homepage .="\nDescrizione: ".$csv[$i][5];
@@ -89,6 +123,7 @@ function start($telegram,$update)
 				if ($csv[$i][33] != NULL)	$homepage .="\nYouTube: ".$csv[$i][33];
 				if ($csv[$i][12] != NULL) $homepage .="\nWebsite: ".$csv[$i][12];
 				if ($csv[$i][12] != NULL) $homepage .="\nEntitles: ".$csv[$i][35];
+		if ($csv[$i][1] != NULL){
 				$csv[$i][1]=str_replace(",",".",$csv[$i][1]);
 				$csv[$i][2]=str_replace(",",".",$csv[$i][2]);
 
@@ -119,6 +154,7 @@ function start($telegram,$update)
 				 $shortLink = get_object_vars($json);
 				 //return $json->id;
 				 $homepage  .="\nPer visualizzarlo su mappa: ".$shortLink['id']."\n";
+			 }
 				 $homepage  .="__________";
 				}
 			//	echo $alert;
@@ -132,8 +168,10 @@ function start($telegram,$update)
 				}
 
 
-				$content = array('chat_id' => $chat_id, 'text' => "Digita un Comune oppure invia la tua posizione tramite la graffetta (📎)");
-					$telegram->sendMessage($content);
+		//		$content = array('chat_id' => $chat_id, 'text' => "Digita un Comune oppure invia la tua posizione tramite la graffetta (📎)");
+			//		$telegram->sendMessage($content);
+					//aggiorna tastiera
+					$this->create_keyboard_temp($telegram,$chat_id);
 
 		}
 
@@ -149,7 +187,13 @@ function create_keyboard($telegram, $chat_id)
 
  }
 
-
+ function create_keyboard_temp($telegram, $chat_id)
+	{
+			$option = array(["Città","Entitity"],["Informazioni"]);
+			$keyb = $telegram->buildKeyBoard($option, $onetime=false);
+			$content = array('chat_id' => $chat_id, 'reply_markup' => $keyb, 'text' => "[Digita un Comune, un'Entity oppure invia la tua posizione tramite la graffetta (📎)]");
+			$telegram->sendMessage($content);
+	}
 
 
 function location_manager($telegram,$user_id,$chat_id,$location)
@@ -231,7 +275,7 @@ $csv[$i][2]=str_replace(",",".",$csv[$i][2]);
 				 $shortLink = get_object_vars($json);
 				 //return $json->id;
 				 $homepage  .="\nPer visualizzarlo su mappa: ".$shortLink['id']."\n";
-$homepage  .="__________";
+				 $homepage  .="__________";
 				}
 			//	echo $alert;
 
@@ -244,8 +288,8 @@ $homepage  .="__________";
 				}
 
 
-				$content = array('chat_id' => $chat_id, 'text' => "Digita un Comune oppure invia la tua posizione tramite la graffetta (📎)");
-					$telegram->sendMessage($content);
+			//	$content = array('chat_id' => $chat_id, 'text' => "Digita un Comune oppure invia la tua posizione tramite la graffetta (📎)");
+			//		$telegram->sendMessage($content);
 
 		}
 
